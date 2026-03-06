@@ -34,6 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
     technology: { label: "Technology", color: "#e8eaf6", textColor: "#3949ab" },
   };
 
+  // App configuration
+  const SCHOOL_NAME = "Mergington High School";
+  const LINK_ICON = "&#128279;";
+  const SHARE_URLS = {
+    twitter: (text, url) =>
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+    whatsapp: (text, url) => `https://wa.me/?text=${text}%20${url}`,
+  };
+
   // State for activities and filters
   let allActivities = {};
   let currentFilter = "all";
@@ -570,12 +579,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         <div class="share-container">
           <button class="share-button" data-activity="${name}" aria-label="Share this activity">
-            🔗 Share
+            <span class="share-arrow" aria-hidden="true">&#8599;</span> Share
           </button>
           <div class="share-dropdown hidden">
-            <a class="share-option share-twitter" href="#" target="_blank" rel="noopener noreferrer">𝕏 Twitter</a>
-            <a class="share-option share-whatsapp" href="#" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>
-            <button class="share-option share-copy">📋 Copy Link</button>
+            <a class="share-icon-btn share-twitter" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)" title="Share on X">X</a>
+            <a class="share-icon-btn share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" title="Share on WhatsApp">W</a>
+            <button class="share-icon-btn share-copy" aria-label="Copy link" title="Copy link">${LINK_ICON}</button>
           </div>
         </div>
       </div>
@@ -609,7 +618,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Share an activity using Web Share API or fallback dropdown
   function shareActivity(name, details, cardElement) {
-    const shareText = `Check out "${name}" at Mergington High School! ${details.description}`;
+    const shareText = `Check out "${name}" at ${SCHOOL_NAME}! ${details.description}`;
     const shareUrl = window.location.href;
 
     if (navigator.share) {
@@ -640,19 +649,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const encodedUrl = encodeURIComponent(shareUrl);
 
     const twitterLink = dropdown.querySelector(".share-twitter");
-    twitterLink.href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+    twitterLink.href = SHARE_URLS.twitter(encodedText, encodedUrl);
 
     const whatsappLink = dropdown.querySelector(".share-whatsapp");
-    whatsappLink.href = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+    whatsappLink.href = SHARE_URLS.whatsapp(encodedText, encodedUrl);
 
     const copyButton = dropdown.querySelector(".share-copy");
     copyButton.onclick = () => {
       navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
-        copyButton.textContent = "✅ Copied!";
+        copyButton.textContent = "✔";
+        copyButton.classList.add("share-copy-done");
         setTimeout(() => {
-          copyButton.textContent = "📋 Copy Link";
+          copyButton.innerHTML = LINK_ICON;
+          copyButton.classList.remove("share-copy-done");
           dropdown.classList.add("hidden");
         }, 1500);
+      }).catch(() => {
+        copyButton.textContent = "!";
+        setTimeout(() => { copyButton.innerHTML = LINK_ICON; }, 1500);
       });
     };
 
