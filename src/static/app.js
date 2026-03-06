@@ -34,6 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
     technology: { label: "Technology", color: "#e8eaf6", textColor: "#3949ab" },
   };
 
+  // App configuration
+  const SCHOOL_NAME = "Mergington High School";
+  const LINK_ICON = "&#128279;";
+  const SHARE_URLS = {
+    twitter: (text, url) =>
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+    whatsapp: (text, url) => `https://wa.me/?text=${text}%20${url}`,
+  };
+
   // State for activities and filters
   let allActivities = {};
   let currentFilter = "all";
@@ -568,6 +577,16 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         `
         }
+        <div class="share-container">
+          <button class="share-button" data-activity="${name}" aria-label="Share this activity">
+            <span class="share-arrow" aria-hidden="true">&#8599;</span> Share
+          </button>
+          <div class="share-dropdown hidden">
+            <a class="share-icon-btn share-twitter" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on X (Twitter)" title="Share on X">X</a>
+            <a class="share-icon-btn share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" title="Share on WhatsApp">W</a>
+            <button class="share-icon-btn share-copy" aria-label="Copy link" title="Copy link">${LINK_ICON}</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -587,8 +606,79 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handler for share button
+    const shareButton = activityCard.querySelector(".share-button");
+    shareButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      shareActivity(name, details, activityCard);
+    });
+
     activitiesList.appendChild(activityCard);
   }
+
+  // Share an activity using Web Share API or fallback dropdown
+  function shareActivity(name, details, cardElement) {
+    const shareText = `Check out "${name}" at ${SCHOOL_NAME}! ${details.description}`;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({ title: name, text: shareText, url: shareUrl }).catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Share failed:", err);
+        }
+      });
+      return;
+    }
+
+    // Fallback: toggle dropdown
+    const dropdown = cardElement.querySelector(".share-dropdown");
+    const isOpen = !dropdown.classList.contains("hidden");
+
+    // Close all other open dropdowns
+    document.querySelectorAll(".share-dropdown").forEach((d) => {
+      if (d !== dropdown) d.classList.add("hidden");
+    });
+
+    if (isOpen) {
+      dropdown.classList.add("hidden");
+      return;
+    }
+
+    // Build share URLs
+    const encodedText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(shareUrl);
+
+    const twitterLink = dropdown.querySelector(".share-twitter");
+    twitterLink.href = SHARE_URLS.twitter(encodedText, encodedUrl);
+
+    const whatsappLink = dropdown.querySelector(".share-whatsapp");
+    whatsappLink.href = SHARE_URLS.whatsapp(encodedText, encodedUrl);
+
+    const copyButton = dropdown.querySelector(".share-copy");
+    copyButton.onclick = () => {
+      navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
+        copyButton.textContent = "✔";
+        copyButton.classList.add("share-copy-done");
+        setTimeout(() => {
+          copyButton.innerHTML = LINK_ICON;
+          copyButton.classList.remove("share-copy-done");
+          dropdown.classList.add("hidden");
+        }, 1500);
+      }).catch(() => {
+        copyButton.textContent = "!";
+        setTimeout(() => { copyButton.innerHTML = LINK_ICON; }, 1500);
+      });
+    };
+
+    dropdown.classList.remove("hidden");
+  }
+
+  // Close share dropdowns when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".share-dropdown").forEach((d) => {
+      d.classList.add("hidden");
+    });
+  });
 
   // Event listeners for search and filter
   searchInput.addEventListener("input", (event) => {
